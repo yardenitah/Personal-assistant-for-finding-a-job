@@ -1,26 +1,27 @@
 # /Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/LinkedInManager.py
+import openai
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
-from bs4 import BeautifulSoup
 import time
 import os
-from ExcelManager import ExcelManager
-
+from PyPDF2 import PdfReader
 
 
 class LinkedInManager:
-    def __init__(self, username, password):
+    def __init__(self, username, password, openai_api_key):
         self.username = username
         self.password = password
+        self.openai_api_key = openai_api_key
         self.driver = None
         self.isLogin = False
+        openai.api_key = self.openai_api_key
 
     def login(self):
-        # Set up the WebDriver with a persistent profile
         options = webdriver.ChromeOptions()
         user_data_dir = os.path.expanduser("~/Library/Application Support/Google/Chrome/SeleniumProfile")
         options.add_argument(f"user-data-dir={user_data_dir}")
@@ -30,23 +31,21 @@ class LinkedInManager:
         self.driver = webdriver.Chrome(options=options)
 
         try:
-            # Open LinkedIn login page
             self.driver.get('https://www.linkedin.com/login')
-            time.sleep(3)  # Add a delay to mimic human behavior
+            time.sleep(3)
 
-            # Check if the username or password input field is present
             try:
                 print(self.username)
                 username_field = self.driver.find_element(By.ID, 'username')
                 username_field.send_keys(self.username)
-                time.sleep(1)  # Add a delay to mimic human behavior
+                time.sleep(1)
             except:
                 print("Username already set.")
             try:
                 print(self.password)
                 password_field = self.driver.find_element(By.ID, 'password')
                 password_field.send_keys(self.password)
-                time.sleep(1)  # Add a delay to mimic human behavior
+                time.sleep(1)
                 password_field.send_keys(Keys.RETURN)
             except:
                 print("Login form not found, assuming already logged in or user data already set.")
@@ -57,10 +56,8 @@ class LinkedInManager:
                 else:
                     print("Login failed or additional steps required.")
 
-            # Wait for a few seconds to ensure the login process completes
             time.sleep(5)
 
-            # Check if verification is needed and handle it
             if "checkpoint/challenge" in self.driver.current_url:
                 print("Verification needed. Please complete the verification manually.")
                 time.sleep(30)
@@ -73,26 +70,39 @@ class LinkedInManager:
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def Compatibility_test(self, job_html, title):
-        if "intern" in title.lower() or "student" in title.lower():
-            return True
+    def extract_text_from_pdf(self, pdf_path):
+        text = ""
+        with open(pdf_path, "rb") as file:
+            reader = PdfReader(file)
+            for page in reader.pages:
+                text += page.extract_text()
+        return text
 
-    def check_experience(self, description, max_experience):
+    def ensures_acceleration_to_the_position(self, jobDescription, jobTitle):
+        if "intern" in jobTitle.lower() or "student" in jobTitle.lower():
+            return True
+        if "senior" in jobTitle.lower() or (not self.__check_experience(jobDescription, 2)):
+            return False
+
+        # What other tests can I do?
+
+    def __check_experience(self, jobDescription, max_experience):
         # Check for experience requirement in the description
-        lines = description.split('.')
+        lines = jobDescription.split('.')
         for line in lines:
             if 'experience' in line.lower():
                 words = line.split()
                 for word in words:
                     if word.isdigit():
-                        if int(word) <= max_experience:
-                            return True
-        return False
+                        if int(word) > max_experience:
+                            return False
+        return True
 
-    def search_jobs(self, job_title):
+    def search_jobs(self, job_title, resume_path, user_description):
         if not self.isLogin:
             print("Not logged in. Please log in first.")
             return
+
         self.driver.get('https://www.linkedin.com/jobs/')
         try:
             search_box = WebDriverWait(self.driver, 10).until(
@@ -104,7 +114,11 @@ class LinkedInManager:
             search_box.send_keys(Keys.RETURN)
             time.sleep(4)
 
+            self.__jobs_published_last_24_hours()
+
             job_listings = self.driver.find_elements(By.CSS_SELECTOR, 'li.jobs-search-results__list-item')
+            cv_text = self.extract_text_from_pdf(resume_path)
+
             for job in job_listings:
                 try:
                     company_name_element = job.find_element(By.CLASS_NAME, 'job-card-container__primary-description')
@@ -118,15 +132,22 @@ class LinkedInManager:
                     time.sleep(3)
 
                     title_element = self.driver.find_element(By.CSS_SELECTOR, 'h1.t-24.t-bold.inline')
-                    title_element = title_element.text.strip()
+                    title = title_element.text.strip()
 
-                    job_page_source = self.driver.page_source
-                    # if self.Compatibility_test(job_page_source, title_element) or check_experience()
+                    job_description_element = self.driver.find_element(By.CSS_SELECTOR,
+                                                                       'div.jobs-box__html-content.jobs-description-content__text')
+                    job_description = job_description_element.text.strip()
+
+                    if (self.ensures_acceleration_to_the_position(job_description, title)):
+                        print(f"{title}: this job good for you\n")
+                    else:
+                        print(f"{title}: this job not good for you\n")
 
                     self.driver.close()
                     self.driver.switch_to.window(self.driver.window_handles[0])
                     time.sleep(3)
-                    print("Company Name: " + company_name + "title: " + title_element)
+
+                    print(f"Company Name: {company_name}\nJob Title: {title}\nJob Description:  {job_description}\n")
 
                 except Exception as e:
                     print(f"An error occurred while processing a job listing: {e}")
@@ -137,16 +158,40 @@ class LinkedInManager:
         except Exception as e:
             print(f"An error occurred while searching for jobs: {e}")
 
+    def __jobs_published_last_24_hours(self):
+        try:
+            # Wait for the "Date posted" filter button to be clickable and then click it
+            date_posted_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.ID, 'searchFilter_timePostedRange'))
+            )
+            date_posted_button.click()
+            time.sleep(2)
+
+            # Wait for the "Past 24 hours" option to be clickable and then click it
+            select_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, '//span[text()="Past 24 hours"]/ancestor::label'))
+            )
+            select_button.click()
+            time.sleep(1)
+
+            # Wait for the "Show results" button to be clickable and then click it
+            show_results_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH,
+                                            '//button[contains(@aria-label, "Apply current filter to show") and contains(@class, "artdeco-button--primary")]/span[text()[contains(.,"Show")]]'))
+            )
+            show_results_button.click()
+
+        except Exception as e:
+            print(f"An error occurred while applying the filter: {e}")
+
     def logout(self):
         if not self.isLogin:
             print("Not logged in. No need to log out.")
             return
         try:
-            # Navigate to the LinkedIn logout page
             self.driver.get('https://www.linkedin.com/m/logout/')
-            time.sleep(3)  # Add a delay to ensure the logout process completes
+            time.sleep(3)
 
-            # Optionally close the browser
             self.driver.quit()
             self.isLogin = False
             print("Logged out successfully.")
