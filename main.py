@@ -9,8 +9,11 @@ def main():
     manager = ExcelManager(excel_path)
     linkedin_username = 'yarden1606@gmail.com'
     linkedin_password = 'yarden1169'
-    job_title = "software engineer intern"
-    linkedin_manager = LinkedInManager(linkedin_username, linkedin_password)
+    openai_api_key = 'your_openai_api_key'  # Replace with your OpenAI API key
+    job_title = "software engineer student"
+    resume_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/A.pdf"  # Correct the path to your resume
+    user_description = "A third-year software engineering student with proficiency in algorithms and data structures, seeking an internship in complex algorithm development and creative problem-solving."
+    linkedin_manager = LinkedInManager(linkedin_username, linkedin_password, openai_api_key)
 
     while True:
         print("1. Add new line.")
@@ -24,7 +27,6 @@ def main():
 
         choice = input("Enter your choice: ")
         print("\n")
-
 
         if choice == '1':
             company_name = input("Enter company name: ") or ""
@@ -67,14 +69,11 @@ def main():
 
         elif choice == '7':
             linkedin_manager.login()
-            linkedin_manager.search_jobs(job_title)
-
+            linkedin_manager.search_jobs(job_title, resume_path, user_description)
 
         elif choice == '8':
             print("Exiting...")
             break
-
-
 
         else:
             print("Invalid choice. Please try again.")
