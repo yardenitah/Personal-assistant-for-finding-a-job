@@ -1,17 +1,24 @@
+# /Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/ExcelManager.py
 import os
 from openpyxl import load_workbook, Workbook
 import matplotlib.pyplot as plt
+import datetime
 
 
 class ExcelManager:
     def __init__(self, file_path=""):
         self.file_path = file_path
 
-    def add_line(self, new_line):
+    def add_line(self, company_name, link, title, cv_version, hr_or_website):
         workbook = load_workbook(self.file_path)
         sheet = workbook.active
 
         next_row = sheet.max_row + 1
+        date_sent = datetime.datetime.today().strftime('%Y-%m-%d')
+        answer = "wait to answer"
+        answer_date = "wait to answer"
+
+        new_line = (company_name, link, title, cv_version, hr_or_website, date_sent, answer, answer_date)
         for col_num, value in enumerate(new_line, start=1):
             sheet.cell(row=next_row, column=col_num, value=value)
 
@@ -141,14 +148,64 @@ class ExcelManager:
 
         return positive_companies, negative_companies
 
-    def add_jobs_to_excel(self, job_data):
+    def delete_jobs_before_2024(self):
         workbook = load_workbook(self.file_path)
         sheet = workbook.active
 
-        for job in job_data:
-            next_row = sheet.max_row + 1
-            for col_num, value in enumerate(job, start=1):
-                sheet.cell(row=next_row, column=col_num, value=value)
+        rows_to_delete = []
+        for row in sheet.iter_rows(min_row=2):
+            date_sent = row[5].value
+            if date_sent:
+                try:
+                    year = int(date_sent.split('-')[0])
+                    if year < 2024:
+                        rows_to_delete.append(row[0].row)
+                except ValueError:
+                    continue
+
+        for row_num in reversed(rows_to_delete):
+            sheet.delete_rows(row_num, 1)
 
         workbook.save(self.file_path)
-        print(f"{len(job_data)} jobs added to {self.file_path}.")
+        print(f"Deleted jobs with dates before 2024 from {self.file_path}.")
+
+    def edit_line_by_company_name(self, company_name, link=None, title=None, cv_version=None, hr_or_website=None):
+        workbook = load_workbook(self.file_path)
+        sheet = workbook.active
+
+        for row in sheet.iter_rows(min_row=2):
+            if row[0].value.lower() == company_name.lower():
+                if link is not None:
+                    row[1].value = link
+                if title is not None:
+                    row[2].value = title
+                if cv_version is not None:
+                    row[3].value = cv_version
+                if hr_or_website is not None:
+                    row[4].value = hr_or_website
+                if row[5].value is None:
+                    date_sent = datetime.datetime.today().strftime('%Y-%m-%d')
+                    row[5].value = date_sent
+                    # row[5].value = '2022-03-2'
+                workbook.save(self.file_path)
+                print(f"Line for company '{company_name}' updated successfully.")
+                return
+
+        print(f"Company '{company_name}' not found in the file.")
+
+    def delete_lines_by_company_name(self, company_name):
+        workbook = load_workbook(self.file_path)
+        sheet = workbook.active
+
+        rows_to_delete = []
+        for row in sheet.iter_rows(min_row=2):
+            if row[0].value == None:
+                break
+            if row[0].value.lower() == company_name.lower():
+                rows_to_delete.append(row[0].row)
+
+        for row_num in reversed(rows_to_delete):
+            sheet.delete_rows(row_num, 1)
+
+        workbook.save(self.file_path)
+        print(f"Deleted all lines with company name '{company_name}' from {self.file_path}.")
