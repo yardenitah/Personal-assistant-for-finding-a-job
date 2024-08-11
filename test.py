@@ -21,3 +21,4 @@ job_entry = {
 
 collection.insert_one(job_entry)
 print("Job entry inserted successfully.")
+# Use DB
