@@ -1,20 +1,23 @@
-# /Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/main.pyfrom CreateExcelFile import CreateExcelFile
-from ExcelManager import ExcelManager
 from LinkedInManager import LinkedInManager
-import datetime
+from DBManager import DBManager  # Updated from ExcelManager to DBManager
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 def main():
-    excel_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/DATA.xlsx"
-    manager = ExcelManager(excel_path)
-    linkedin_username = 'yarden1606@gmail.com'
-    linkedin_password = 'yarden1169'
-    openai_api_key = 'your_openai_api_key'  # Replace with your OpenAI API key
-    job_title_list = ["software engineer student", "software engineer intern", "Elbit", "backend", "Java", "Python"]
+    manager = DBManager()  # Updated to use DBManager
+    linkedin_username = os.getenv('LINKEDIN_USERNAME')
+    linkedin_password = os.getenv('LINKEDIN_PASSWORD')
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    job_title_list = ["backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Java", "Python"]
+    # job_title_list = ["Java", "backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Python"]
+
     resume_A_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_A.pdf"
     resume_B_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_B.pdf"
-    user_description = "A third-year software engineering student with proficiency in algorithms and data structures, seeking an internship in complex algorithm development and creative problem-solving."
+    user_description = os.getenv('USER_DESCRIPTION')
     linkedin_manager = LinkedInManager(linkedin_username, linkedin_password, openai_api_key, resume_A_path, resume_B_path)
+
     while True:
         print("1. Add new line.")
         print("2. Which version of CV is better.")
@@ -22,11 +25,12 @@ def main():
         print("4. Analyze preferences by submission method (HR vs Website).")
         print("5. Get company names by answer.")
         print("6. Plot CV success rates.")
-        print("7. Apply for jobs in Linkedin.")
+        print("7. Apply for jobs on LinkedIn.")
         print("8. Delete jobs before 2024.")
         print("9. Edit a line by company name.")
         print("10. Delete lines by company name.")
-        print("11. Exit")
+        print("11. Export all jobs to Excel.")
+        print("12. Exit")
 
         choice = input("Enter your choice: ")
         print("\n")
@@ -86,15 +90,15 @@ def main():
             manager.delete_lines_by_company_name(company_name)
 
         elif choice == '11':
+            output_file_path = input("Enter the output Excel file path (default: JobsExport.xlsx): ") or "JobsExport.xlsx"
+            manager.export_jobs_to_excel(output_file_path)
+
+        elif choice == '12':
             print("Exiting...")
             break
 
         else:
             print("Invalid choice. Please try again.")
-
-
-
-
 
 if __name__ == "__main__":
     main()
