@@ -9,7 +9,7 @@ def main():
     manager = DBManager()  # Updated to use DBManager
     linkedin_username = os.getenv('LINKEDIN_USERNAME')
     linkedin_password = os.getenv('LINKEDIN_PASSWORD')
-    openai_api_key = os.getenv('OPENAI_API_KEY')
+    openai_api_key = " "
     job_title_list = ["backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Java", "Python"]
     # job_title_list = ["Java", "backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Python"]
 
