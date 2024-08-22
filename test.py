@@ -1,29 +1,23 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
+from DBManager import DBManager  
 
-# Load environment variables from .env file
-load_dotenv()
+manager = DBManager()  
 
-# connect to database
-client = MongoClient(os.getenv("DB_URI"))
+name = "Nir Shemer"
 
-# Connect to the database and collection
-db = client["JobsDB"]
-collection = db["MyJobs"]
+# jobList = manager.get_job_links_by_hr_name(name)
+# if jobList:
+#     for index, job in enumerate(jobList):
+#         print(f"{index + 1}) {job}\n")
+# else:
+#     print(f"No jobs found for {name}.")
 
-# Example: Insert a document
-job_entry = {
-    "company_name": "Example Corp33",
-    "job_title": "Software Engineer",
-    "job_link": "https://example.com/job/123",
-    "date_sent": "2024-08-10",
-    "cv_version": "A",
-    "submission_method": "website",
-    "answer": "waiting",
-    "answer_date": None
-}
+# if manager.does_hr_have_job(name, "Mal-Tech secure your assets", "systems engineer"):
+#     print("exist")
+# else:
+#     print("not exist")
+    
+# jobs = manager.get_jobs_by_company_name("Mal-Tech secure your assets")
+# for index, job in enumerate(jobs):
+#     print(f"\n{index + 1}) {job}\n")
 
-collection.insert_one(job_entry)
-print("Job entry inserted successfully.")
-# Use DB
+manager.export_hr_submitted_jobs_to_excel()

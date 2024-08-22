@@ -1,22 +1,27 @@
+# /Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/main.py
 from LinkedInManager import LinkedInManager
 from DBManager import DBManager  # Updated from ExcelManager to DBManager
+from EmailManager import EmailManager  # Import the EmailManager
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
 
 def main():
     manager = DBManager()  # Updated to use DBManager
     linkedin_username = os.getenv('LINKEDIN_USERNAME')
     linkedin_password = os.getenv('LINKEDIN_PASSWORD')
     openai_api_key = " "
-    job_title_list = ["backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Java", "Python"]
-    # job_title_list = ["Java", "backend engineer", "software engineer student", "software engineer intern", "Elbit", "backend", "Python"]
+    job_title_list = ["software engineer intern", "software engineer student", "java developer", "Python", "software engineer student", "backend engineer", "software student", "Java", "Python backend engineer", "java backend engineer",
+                      "backend developer", "backend",
+                      "Elbit"]
 
     resume_A_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_A.pdf"
     resume_B_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_B.pdf"
     user_description = os.getenv('USER_DESCRIPTION')
-    linkedin_manager = LinkedInManager(linkedin_username, linkedin_password, openai_api_key, resume_A_path, resume_B_path)
+    linkedin_manager = LinkedInManager(linkedin_username, linkedin_password, openai_api_key, resume_A_path, resume_B_path, 'entry level')
+    email_manager = EmailManager()  # Initialize the EmailManager
 
     while True:
         print("1. Add new line.")
@@ -30,7 +35,8 @@ def main():
         print("9. Edit a line by company name.")
         print("10. Delete lines by company name.")
         print("11. Export all jobs to Excel.")
-        print("12. Exit")
+        print("12. Check for new email responses.")  # Add this option
+        print("13. Exit")
 
         choice = input("Enter your choice: ")
         print("\n")
@@ -42,7 +48,7 @@ def main():
             cv_version = input("Enter CV version: ") or ""
             hr_or_website = input("Enter HR or website (optional): ") or ""
 
-            manager.add_line(company_name, link, title, cv_version, hr_or_website)
+            manager.add_job_toDB(company_name, link, title, cv_version, hr_or_website)
             print("New line added successfully.\n")
 
         elif choice == '2':
@@ -58,7 +64,8 @@ def main():
         elif choice == '4':
             preferences = manager.analyze_preference_by_submission_method()
             print(f"HR liked CV A {preferences['HR']['CV A']} times and CV B {preferences['HR']['CV B']} times.")
-            print(f"Websites liked CV A {preferences['Website']['CV A']} times and CV B {preferences['Website']['CV B']} times.")
+            print(
+                f"Websites liked CV A {preferences['Website']['CV A']} times and CV B {preferences['Website']['CV B']} times.")
 
         elif choice == '5':
             positive_companies, negative_companies = manager.get_company_names_by_answer()
@@ -90,15 +97,22 @@ def main():
             manager.delete_lines_by_company_name(company_name)
 
         elif choice == '11':
-            output_file_path = input("Enter the output Excel file path (default: JobsExport.xlsx): ") or "JobsExport.xlsx"
-            manager.export_jobs_to_excel(output_file_path)
+            output_file_path = input(
+                "Enter the output Excel file path (default: JobsExport.xlsx): ") or "JobsExport.xlsx"
+            manager.export_all_jobs_to_excel(output_file_path)
 
         elif choice == '12':
+            # email_manager.check_for_new_responses()  # Call the method to check for new email responses
+            pass
+
+        elif choice == '13':
             print("Exiting...")
             break
 
         else:
             print("Invalid choice. Please try again.")
 
+
 if __name__ == "__main__":
     main()
+
