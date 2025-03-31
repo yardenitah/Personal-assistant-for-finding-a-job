@@ -1,12 +1,13 @@
 # /Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/LinkedInManager.py
 import openai
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
-from ExcelManager import ExcelManager
+# from ExcelManager import ExcelManager
 from AIManager import AIManager
 import time
 import os
@@ -34,17 +35,21 @@ class LinkedInManager:
         self.db_manager = DBManager()  # Replace ExcelManager with DBManager
 
     def login(self):
+        print("start Logging in...")
         options = webdriver.ChromeOptions()
-        user_data_dir = os.path.expanduser("~/Library/Application Support/Google/Chrome/SeleniumProfile")
-        options.add_argument(f"user-data-dir={user_data_dir}")
-        options.add_argument(
-            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        # options.add_argument("--headless")  # Run in headless mode
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("user-agent=Mozilla/5.0")
 
         # remove this line
-        # options.add_argument(
-        #     "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        # )
-        self.driver = webdriver.Chrome(options=options)
+        options.add_argument(
+            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        )
+
+        # Use the installed chromedriver
+        self.driver = webdriver.Chrome(service=Service("/usr/local/bin/chromedriver"), options=options)
 
         try:
             self.driver.get('https://www.linkedin.com/login')
@@ -91,17 +96,18 @@ class LinkedInManager:
             print("Not logged in. Please log in first.")
             return
 
-        resume_text = self.extract_text_from_pdf(self.resume_A_path)
+        # resume_text = self.extract_text_from_pdf(self.resume_A_path)
 
         job_listings = self.__get_job_list(job_title, False)
         if job_listings:
-            self.__search_with_hr(user_description, job_listings, resume_text)
+            self.__search_with_hr(user_description, job_listings)
             time.sleep(2)
 
         job_listings = self.__get_job_list(job_title, True)
         if job_listings:
-            self.__search_easy_apply(user_description, job_listings, resume_text)
+            self.__search_easy_apply(user_description, job_listings)
             time.sleep(2)
+
 
     def __get_job_list(self, job_title, easyApply_filter):
         self.driver.get('https://www.linkedin.com/jobs/')
@@ -117,50 +123,33 @@ class LinkedInManager:
             search_box.send_keys(Keys.RETURN)
             time.sleep(4)
 
-            # for 24 hours remove the comment from the line
-            # self.__jobs_published_last_24_hours()
-
-            # Verify experience level filter is working
-            # if not self.__experience_level(self.experienceLevel):
-            #     print("No jobs found matching the experience level.")
+            # if not self.__filterJobs(easyApply_filter):
+            #     print("No jobs were found with the required filters.")
             #     return []
-            # if (easyApply_filter and not self.easyApplyState) or (not easyApply_filter and self.easyApplyState):
-            #     self.__turns_off_and_on_easy_apply()
 
-            # Scroll to load initial job listings
-            self.scroll_upDown_inWebPage("jobs-search-results-list")
-
-            self.scroll_to_middle_inWebPage("jobs-search-results-list")
-
-            # Log the filtered jobs count before proceeding
-            job_listings_element = self.driver.find_elements(By.CSS_SELECTOR, 'li.jobs-search-results__list-item')
-            print(f'Number of job listings found: {len(job_listings_element)}')
-            if len(job_listings_element) == 0:
+            # XPath to target all job list items
+            job_listings_element = self.driver.find_elements(By.XPATH, "//li[contains(@class, 'scaffold-layout__list-item') and @data-occludable-job-id]")
+            job_listings_len = len(job_listings_element)
+            print(f'len of job_listings_element: {job_listings_len}')
+            if job_listings_len == 0:
                 print("No job listings found after filtering. Please check the filters.")
                 return []
 
-            for i in range(1, len(job_listings_element) + 1):
-                if i == 8:
-                    self.scroll_to_middle_inWebPage("jobs-search-results-list")
-                    time.sleep(2)  # Wait for the content to load
-                elif i == 10:
-                    self.scroll_to_middle_inWebPage("jobs-search-results-list")  # Re-locate to the middle
-                    time.sleep(2)  # Wait for content to load
-                    self.scroll_down_inWebPage("jobs-search-results-list")  # Scroll down after reaching the middle
-
-                # Set a retry limit to prevent infinite loops
+            time.sleep(1)
+            i = 1
+            while i <= job_listings_len:
                 try:
-                    job_element = self.driver.find_element(By.XPATH, f"//li[contains(@class, 'jobs-search-results__list-item')][{i}]")
-                    if job_element is None:
-                        print(f"{i}) No job", "*" * 45, "\n")
-                        break
+                    # Use `find_element` instead of `find_elements` for a single element and correct the XPath
+                    job_element = self.driver.find_element(By.XPATH,
+                                                           f"(//li[contains(@class, 'scaffold-layout__list-item') and @data-occludable-job-id])[{i}]")
                     job_listings.append(job_element)
-                    time.sleep(2)
-                    print(f'{i}) Job element found: {job_element}\n', "*" * 55)
+                    i += 1
+                    # if i > maxNumberOfJobsTosearch:
+                    #     break
+
                 except Exception as e:
                     print(f"{i}) No job element found, skipping.", "*" * 40)
-                    break  # Exit the retry loop and skip to the next job listing
-
+                    break  # Exit the loop if no element is found
             if easyApply_filter:
                 print(f"found {len(job_listings)} jobs for {job_title} and easyApply_filter")
             else:
@@ -169,10 +158,12 @@ class LinkedInManager:
             return job_listings
 
         except Exception as e:
-            print(f"An error occurred in __get_job_list: {e}")
+            print(f"An error occurred in __get_job_list: {str(e).splitlines()[0]}")
             return []
 
-    def __search_with_hr(self, user_description, job_listings, resume_text):
+
+
+    def __search_with_hr(self, user_description, job_listings):
         print("start __search_with_hr function: \n")
         print("len(job_listings): ", len(job_listings))
         self.scroll_up_inWebPage("jobs-search-results-list")
@@ -205,7 +196,7 @@ class LinkedInManager:
 
                     print(f"Processing job {index + 1}: {title} at {company_name}")
 
-                    if self.ensures_acceleration_to_the_position(job_description, title, resume_text, user_description):
+                    if self.ensures_acceleration_to_the_position(job_description, title):
                         print(f"Job {index + 1}: {title} is suitable.")
                         isHR, hrName = self.__send_message_to_hr(title, company_name, job_link)
                         if isHR:
@@ -234,7 +225,7 @@ class LinkedInManager:
         except Exception as e:
             print(f"An error occurred while searching for jobs: {e}")
 
-    def __search_easy_apply(self, user_description, job_listings, resume_text):
+    def __search_easy_apply(self, user_description, job_listings):
         print("start __search_easy_apply function: \n")
         try:
             for index, job in enumerate(job_listings):
@@ -258,7 +249,7 @@ class LinkedInManager:
 
                     print(f"Processing job {index + 1}: {title} at {company_name}")
 
-                    if self.ensures_acceleration_to_the_position(job_description, title, resume_text, user_description):
+                    if self.ensures_acceleration_to_the_position(job_description, title):
                         print(f"Job {index + 1}: {title} is suitable.")
                         if self.__easy_submit_CV():
                             version = 'A' if self.CV == 'A' else 'B'
@@ -284,6 +275,31 @@ class LinkedInManager:
         finally:
             if self.easyApplyState:
                 self.__turns_off_and_on_easy_apply()
+
+
+    def __filterJobs(self, easyApply_filter):
+        # For 24 hours, remove the comment from the line below
+        # self.__jobs_published_last_24_hours()
+        # time.sleep(2)
+
+        # Check if jobs were published in the last week
+        # if not self.__jobs_published_last_week():
+        #     return False
+        # time.sleep(2)
+
+        # Verify experience level filter is working
+        if not self.__experience_level(self.experienceLevel):
+            print("No jobs found matching the experience level.")
+            return False
+        time.sleep(2)
+
+        # Toggle easy apply filter if needed
+        if (easyApply_filter and not self.easyApplyState) or (not easyApply_filter and self.easyApplyState):
+            if not self.__turns_off_and_on_easy_apply():
+                print("No result for easy Apply filter\n")
+                return False
+
+        return True
 
     def __send_message_to_hr(self, job_title, company_name, job_link):
         def close_chet():
@@ -538,7 +554,7 @@ class LinkedInManager:
                 text += page.extract_text()
         return text
 
-    def ensures_acceleration_to_the_position(self, job_description, job_title, resume_text, user_description):
+    def ensures_acceleration_to_the_position(self, job_description, job_title):
         if "intern" in job_title.lower() or "student" in job_title.lower() or "junior" in job_title.lower():
             return True
 

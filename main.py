@@ -2,24 +2,35 @@
 from LinkedInManager import LinkedInManager
 from DBManager import DBManager  # Updated from ExcelManager to DBManager
 from EmailManager import EmailManager  # Import the EmailManager
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# Kerem035@gmail.com
+# kerem2549
+# Industrial Engineering and Management Student
+
+# load_dotenv()
 
 
 def main():
     manager = DBManager()  # Updated to use DBManager
-    linkedin_username = os.getenv('LINKEDIN_USERNAME')
-    linkedin_password = os.getenv('LINKEDIN_PASSWORD')
+    # linkedin_username = os.getenv('LINKEDIN_USERNAME')
+    # linkedin_password = os.getenv('LINKEDIN_PASSWORD')
+    # user_description = os.getenv('USER_DESCRIPTION')
+    #
+
+
+    linkedin_username = 'yarden1606@gmail.com'
+    linkedin_password = '??'
+    user_description = 'test'
+
     openai_api_key = " "
-    job_title_list = ["software engineer intern", "software engineer student", "java developer", "Python", "software engineer student", "backend engineer", "software student", "Java", "Python backend engineer", "java backend engineer",
+    job_title_list = ["Industrial and Management Engineering Student","software engineer intern", "software engineer student", "java developer", "Python", "software engineer student", "backend engineer", "software student", "Java", "Python backend engineer", "java backend engineer",
                       "backend developer", "backend",
                       "Elbit"]
 
     resume_A_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_A.pdf"
     resume_B_path = "/Users/yrdnqldrwn/Desktop/SOFTWARE/PayChatm/Info_aboutCVsubmitted/CV_B.pdf"
-    user_description = os.getenv('USER_DESCRIPTION')
     linkedin_manager = LinkedInManager(linkedin_username, linkedin_password, openai_api_key, resume_A_path, resume_B_path, 'entry level')
     email_manager = EmailManager()  # Initialize the EmailManager
 

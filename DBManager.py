@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 class DBManager:
     def __init__(self):
         load_dotenv()
-        client = MongoClient(os.getenv("DB_URI"))
+        MONGO_URI = 'mongodb://localhost:27017'
+        client = MongoClient(MONGO_URI)
         self.db = client["JobsDB"]
         self.collection = self.db["MyJobs"]
 
